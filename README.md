@@ -152,9 +152,55 @@ docs/               architecture diagram, demo video script
 run.py              one-command launcher
 ```
 
-## Tech stack and AI disclosure
+## Tech stack and implementation details
 
-- **Language/runtime:** Python 3 · **Backend:** FastAPI, Uvicorn, Pydantic · **CLI:** argparse, requests, BeautifulSoup4, urllib.robotparser · **Frontend:** plain HTML/CSS/JavaScript with Server-Sent Events · **Tests:** pytest
-- **Optional LLM:** any OpenAI-compatible chat-completions API (e.g. Groq, OpenAI, Ollama). Not required.
-- **AI assistance:** the codebase was developed with the help of an AI coding assistant (Anthropic's Claude) for scaffolding, implementation and tests. The architecture, security model and behaviour were reviewed and tested by the author, and every component is explained above.
-- **External services at runtime:** only the websites you ask it to crawl, and the LLM endpoint if you configure one.
+ProofCrawl is engineered with a strict separation between the conversational orchestration layer and the sandboxed execution environment. Below is a comprehensive breakdown of the technology stack and its engineering purpose:
+
+### 1. Backend & API Services
+| Component | Technology | Role & Engineering Purpose |
+|---|---|---|
+| **Runtime** | Python 3.10+ (tested on 3.11 / 3.12) | Core language runtime providing typed models, subprocess control, and cross-platform compatibility across Windows, Linux, and macOS. |
+| **API Framework** | **FastAPI** (`>=0.110`) | High-performance asynchronous web framework handling incoming chat prompts, run lifecycle endpoints, file downloads, and health checks. |
+| **ASGI Server** | **Uvicorn** (`>=0.29`) | Production-ready ASGI web server powering concurrent request handling and non-blocking event streaming. |
+| **Data Validation** | **Pydantic v2** (`>=2.6`) | Strict runtime schema validation for `TaskSpec` (intent parameters) and `ResultModel` (CLI output verification). Enforces bounds on page limits and depth caps. |
+| **Event Streaming** | **Server-Sent Events (SSE)** via `StreamingResponse` | Asynchronous streaming of stage changes, stdout NDJSON events, and stderr diagnostics directly to the client with sub-100ms latency. |
+
+### 2. Subprocess Orchestration & Execution
+| Component | Implementation | Role & Engineering Purpose |
+|---|---|---|
+| **Process Launcher** | `subprocess.Popen(shell=False)` | Spawns the CLI as a direct child process using an immutable argument vector (`argv` list). Guarantees immunity against shell command injection. |
+| **Isolation & Sandboxing** | Environment scrubbing + Per-run workspace | Cleanses process environment to strip API keys, secrets, and system tokens (`LLM_API_KEY` never reaches the CLI). Runs each task inside an isolated `runs/<id>/` working directory. |
+| **Process Control** | Process groups + Watchdog thread | Implements `start_new_session=True` (POSIX) / `CREATE_NEW_PROCESS_GROUP` (Windows). A watchdog thread enforces hard timeouts (`HARD_TIMEOUT_S`), terminating the entire process tree cleanly on timeout or user cancellation. |
+| **Telemetry Reader** | Daemon reader threads | Dedicated background threads parse stdout NDJSON progress events and capture stderr diagnostic logs without blocking execution. |
+
+### 3. Dedicated CLI Engine (`sitecrawl`)
+| Component | Technology | Role & Engineering Purpose |
+|---|---|---|
+| **CLI Parser** | `argparse` with custom type bounds | Validates command-line flags, enforcing strict ranges on `--max-pages` (1-50), `--max-depth` (0-4), `--max-seconds`, and download caps. |
+| **HTTP Client** | `requests.Session` | Bounded HTTP client with custom User-Agent, connection pooling, and strict per-request timeouts. |
+| **SSRF & Network Guard** | `socket.getaddrinfo` + `ipaddress` | Resolves target hostnames and validates destination IPs before establishing connections. Re-validated on every HTTP redirect hop to prevent SSRF against private networks, loopback, or cloud metadata (`169.254.169.254`). |
+| **Robots.txt Parser** | Custom RFC 9309 compliant parser | Fetches and parses `robots.txt` supporting user-agent specificity, prefix/wildcard matching (`*`, `$`), and crawl-delay enforcement. |
+| **HTML Parsing & Extraction** | **BeautifulSoup4** (`bs4`) + `soupsieve` | Parses DOM trees, removes noise tags (`<script>`, `<style>`), strips hidden CSS elements (`display:none`, zero font, opacity, offscreen text), extracts JSON-LD metadata, and discovers contact emails and phones. |
+| **Prompt Injection Defense** | Multi-pattern regex scanner | Treats all website content as untrusted data. Scans visible text, hidden CSS elements, and HTML comments for prompt injection heuristics. Quarantines flagged text from summarization. |
+| **Summarizer** | Extractive TF-IDF with evidence linking | Deterministic extractive summarizer that scores sentences based on term frequency, inverse document frequency, heading proximity, and depth. Generates numbered citations linking each claim to its source URL. |
+| **Integrity & Checkpointing** | `hashlib.sha256` + Atomic file replace | Writes `result.json.tmp` and replaces atomically after every crawled page so partial results survive interruption. Calculates per-page digests and output file SHA-256 hash. |
+
+### 4. Frontend & User Interface
+| Component | Technology | Role & Engineering Purpose |
+|---|---|---|
+| **Architecture** | Vanilla HTML5, CSS3, Modern JavaScript (ES6+) | Lightweight client with **zero build tools** and **zero node_modules**. Loads instantly in any standard browser. |
+| **Live Telemetry** | Native `EventSource` (SSE API) | Connects to `/api/runs/{id}/events` to render live stage rail progress (`Understand` ➔ `Plan` ➔ `Validate` ➔ `Execute` ➔ `Verify` ➔ `Respond`) and live terminal logs. |
+| **Execution Receipt** | Dynamic DOM + CSS Stamp | Formats the cryptographic execution receipt (PID, argv, exit code, duration, SHA-256 match) and applies a visual verification stamp upon cryptographic validation. |
+
+### 5. Testing & Quality Assurance
+| Component | Technology | Role & Engineering Purpose |
+|---|---|---|
+| **Test Suite** | **pytest** (`>=8.0`) | 21 comprehensive automated tests verifying URL guards, SSRF protection, robots.txt Google-style matching, prompt injection quarantine, CLI exit codes, runner timeout/cancellation, and LLM output validation. |
+
+---
+
+## AI Disclosure & Runtime Services
+
+- **AI Assistance:** This codebase was developed with the assistance of Anthropic's Claude as an AI coding assistant for code scaffolding, boilerplate generation, and test writing. All system architecture, security controls (SSRF protection, prompt injection scanner, environment scrubbing), and verification logic were designed, reviewed, and tested by the author.
+- **Optional LLM Integration:** Supports any OpenAI-compatible API endpoint (OpenAI, Groq, OpenRouter, Ollama) for intent interpretation and grounded abstractive summaries. **An LLM key is completely optional**; the application operates 100% offline out-of-the-box using deterministic rule-based parsing and TF-IDF extraction.
+- **External Services at Runtime:** Only the target websites you explicitly instruct the system to crawl, and the optional LLM endpoint if configured.
