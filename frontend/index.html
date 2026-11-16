@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ccircle cx=%278%27 cy=%278%27 r=%276%27 fill=%27%230E7C66%27/%3E%3C/svg%3E">
+<title>ProofCrawl — answers with receipts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E6EBEF; --panel:#F7F9FA; --ink:#14213D; --ink-2:#4A5873; --line:#C9D2DA;
+  --paper:#FFFFFF; --verified:#0E7C66; --partial:#B7791F; --failed:#B42318; --quarantine:#6B3FA0;
+  --term:#0F1B2E; --term-ink:#CFE3F2;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);height:100vh}
+/* ---------- chat column ---------- */
+.chat{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line)}
+header.top{display:flex;align-items:baseline;gap:14px;padding:18px 28px 14px;border-bottom:1px solid var(--line)}
+.brand{font-weight:700;font-size:22px;letter-spacing:-.02em}
+.brand span{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--verified);margin-right:8px;transform:translateY(-2px)}
+.tagline{color:var(--ink-2)}
+.env{margin-left:auto;font-size:13px;color:var(--ink-2)}
+.log{flex:1;overflow:auto;padding:24px 28px 8px}
+.empty h1{font-size:34px;line-height:1.15;letter-spacing:-.025em;margin:8px 0 10px;max-width:22ch}
+.empty p{color:var(--ink-2);max-width:60ch;margin:0 0 18px}
+.tries{display:flex;flex-direction:column;gap:8px;max-width:640px}
+.try{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink)}
+.try:hover{border-color:var(--ink-2)}
+.try small{display:block;color:var(--ink-2)}
+.msg{margin:0 0 18px;max-width:760px}
+.msg.user{margin-left:auto;background:var(--ink);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;width:fit-content;max-width:80%}
+.msg.bot{background:var(--panel);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:14px 16px}
+.msg.bot p{margin:.2em 0 .6em}
+.msg code{font-family:var(--mono);font-size:.88em;background:#E9EEF2;padding:1px 5px;border-radius:4px}
+.plan ol{margin:6px 0 4px 18px;padding:0;color:var(--ink-2)}
+.argv{font-family:var(--mono);font-size:12.5px;background:var(--term);color:var(--term-ink);padding:10px 12px;border-radius:8px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.meta{color:var(--ink-2);font-size:13px}
+.status{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;padding:3px 10px;border-radius:99px;color:#fff}
+.s-SUCCESS{background:var(--verified)} .s-PARTIAL,.s-TIMED_OUT_PARTIAL,.s-CANCELLED_PARTIAL{background:var(--partial)}
+.s-FAILED,.s-TIMED_OUT,.s-CANCELLED{background:var(--failed)} .s-BLOCKED{background:#5B6475} .s-RUNNING{background:var(--ink-2)}
+.headline{font-size:18px;font-weight:600;margin:8px 0 4px;letter-spacing:-.01em}
+.reason{color:var(--ink-2);font-size:13.5px;margin-bottom:10px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:12px 0 10px}
+.tabs button{background:none;border:0;padding:6px 10px;color:var(--ink-2);border-bottom:2px solid transparent}
+.tabs button[aria-selected=true]{color:var(--ink);border-color:var(--ink);font-weight:600}
+.summary p{font-size:15.5px;line-height:1.65;margin:0 0 10px;max-width:68ch}
+.cite{font:600 11px var(--mono);color:var(--verified);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:3px;text-decoration:none;vertical-align:2px}
+.facts{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:14px;margin:10px 0}
+.facts dt{color:var(--ink-2)} .facts dd{margin:0}
+.quarantine{border-left:3px solid var(--quarantine);background:#F1ECF7;padding:10px 12px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px}
+.quarantine b{color:var(--quarantine)}
+.quarantine q{display:block;font-family:var(--mono);font-size:12px;color:#4b3a63;margin-top:4px}
+pre.json{font:12.5px/1.5 var(--mono);background:var(--term);color:var(--term-ink);border-radius:8px;padding:12px;max-height:420px;overflow:auto;margin:0}
+.j-k{color:#8EC5FF}.j-s{color:#B8E6A8}.j-n{color:#F5C77E}.j-b{color:#F29B9B}
+table.pages{border-collapse:collapse;width:100%;font-size:13px}
+table.pages td,table.pages th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.pages th{color:var(--ink-2);font-weight:500}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--ink)}
+.btn:hover{border-color:var(--ink)}
+.btn.danger{color:var(--failed);border-color:#E5B4AF}
+.diff{font-size:13.5px;margin-top:8px}
+form.compose{display:flex;gap:10px;padding:14px 28px 20px;border-top:1px solid var(--line);background:var(--bg)}
+form.compose textarea{flex:1;resize:none;height:56px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font:inherit;background:var(--paper);color:var(--ink)}
+form.compose button{background:var(--ink);color:#fff;border:0;border-radius:12px;padding:0 22px;font-weight:600}
+form.compose button:disabled{opacity:.5}
+/* ---------- execution column ---------- */
+.exec{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+.exec h2{font-size:15px;margin:0;font-weight:600}
+.stages{list-style:none;margin:0;padding:16px 22px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px;border-bottom:1px solid var(--line)}
+.stages li{font-size:12px;color:var(--ink-2);position:relative;padding-top:12px}
+.stages li::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;border-radius:2px;background:var(--line)}
+.stages li.active::before{background:var(--ink-2);animation:pulse 1s ease-in-out infinite alternate}
+.stages li.done::before{background:var(--verified)}
+.stages li.bad::before{background:var(--failed)}
+.stages li.done,.stages li.active{color:var(--ink)}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+.termwrap{padding:14px 22px 0;display:flex;flex-direction:column;min-height:0;flex:1}
+.termhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.termhead .meta{margin-left:auto}
+.term{flex:1;min-height:160px;overflow:auto;background:var(--term);color:var(--term-ink);font:12px/1.55 var(--mono);border-radius:10px;padding:10px 12px}
+.term div{white-space:pre-wrap;word-break:break-all}
+.t-dim{color:#7C8FA6}.t-ok{color:#7FD8B6}.t-warn{color:#F5C77E}.t-err{color:#F29B9B}.t-q{color:#C9A7F2}
+.receipt-wrap{padding:16px 22px 22px;overflow:auto;max-height:46vh}
+.receipt{position:relative;background:var(--paper);font:12px/1.6 var(--mono);color:#222;padding:16px 16px 22px;
+  filter:drop-shadow(0 1px 0 #C9D2DA);
+  -webkit-mask:conic-gradient(from 135deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/12px 7px repeat-x,linear-gradient(#000 0 0) top/100% calc(100% - 7px) no-repeat;
+          mask:conic-gradient(from 135deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/12px 7px repeat-x,linear-gradient(#000 0 0) top/100% calc(100% - 7px) no-repeat}
+.receipt .rt{text-align:center;font-weight:600;font-size:13px}
+.receipt .rule{border-top:1px dashed #999;margin:8px 0}
+.receipt .row{display:flex;justify-content:space-between;gap:12px}
+.receipt .row span:last-child{text-align:right;word-break:break-all}
+.receipt .empty-r{color:#888;text-align:center;padding:18px 0}
+.stamp{position:absolute;right:14px;top:10px;pointer-events:none;background:rgba(255,255,255,.85);transform:rotate(-11deg);border:3px solid currentColor;border-radius:6px;padding:4px 10px;
+  font:700 15px var(--sans);letter-spacing:.04em;opacity:.85;animation:stamp .35s cubic-bezier(.2,1.6,.4,1)}
+.stamp.ok{color:var(--verified)} .stamp.warn{color:var(--partial)} .stamp.bad{color:var(--failed)}
+@keyframes stamp{from{transform:rotate(-11deg) scale(2.2);opacity:0}to{transform:rotate(-11deg) scale(1);opacity:.85}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+@media (max-width:900px){.app{grid-template-columns:1fr;height:auto}.chat{height:100vh}.exec{min-height:90vh}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="chat" aria-label="Chat">
+    <header class="top">
+      <div class="brand"><span aria-hidden="true"></span>ProofCrawl</div>
+      <div class="tagline">Every answer comes with a receipt.</div>
+      <div class="env" id="env">connecting…</div>
+    </header>
+    <div class="log" id="log" aria-live="polite">
+      <div class="empty" id="empty">
+        <h1>Ask for a website, get verified facts back.</h1>
+        <p>Describe the task in plain language. ProofCrawl turns it into a sandboxed run of the <code>sitecrawl</code> command-line tool, streams what the process is doing, and only shows results the run actually produced.</p>
+        <div class="tries" id="tries"></div>
+      </div>
+    </div>
+    <form class="compose" id="compose">
+      <label for="input" class="sr" style="position:absolute;left:-9999px">Message</label>
+      <textarea id="input" placeholder="Crawl https://example.com, extract the important information, give me a summary and the data in JSON" maxlength="2000"></textarea>
+      <button id="send" type="submit">Run</button>
+    </form>
+  </section>
+
+  <aside class="exec" aria-label="Execution">
+    <ol class="stages" id="stages">
+      <li data-s="understand">Understand</li><li data-s="plan">Plan</li><li data-s="validate">Validate</li>
+      <li data-s="execute">Execute</li><li data-s="verify">Verify</li><li data-s="respond">Respond</li>
+    </ol>
+    <div class="termwrap">
+      <div class="termhead"><h2>Process output</h2><span class="meta" id="procmeta">no process yet</span></div>
+      <div class="term" id="term" role="log"><div class="t-dim">stdout events and stderr from the CLI appear here as they happen.</div></div>
+    </div>
+    <div class="receipt-wrap">
+      <div class="receipt" id="receipt"><div class="rt">EXECUTION RECEIPT</div><div class="rule"></div><div class="empty-r">Run a task to print a receipt.</div></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const log = $("#log"), term = $("#term"), input = $("#input"), send = $("#send");
+let health = null, currentRun = null;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`([^`]+)`/g,"<code>$1</code>")
+  .split("\n").map(l => l.startsWith("- ") ? `<li>${l.slice(2)}</li>` : `<p>${l}</p>`).join("").replace(/(<li>.*?<\/li>)+/g, m => `<ul>${m}</ul>`);
+
+async function init(){
+  try{ health = await (await fetch("/api/health")).json(); }catch(e){ $("#env").textContent = "backend offline"; return; }
+  $("#env").textContent = (health.llm_enabled ? `LLM: ${health.llm_model}` : "Rule-based intent (no LLM key)") + (health.allow_private_hosts ? " · demo mode" : "");
+  const demo = health.allow_private_hosts;
+  const tries = [
+    demo && ["Crawl http://localhost:8765/, extract the important information, give me a summary, and return the extracted data in JSON format.", "Bundled demo site, includes a planted prompt-injection page"],
+    ["Crawl https://example.com, extract the important information, give me a summary, and return the extracted data in JSON format.", "The mandatory challenge task"],
+    demo && ["Check http://localhost:8765/ for broken links and list contact details", "Link checking and contact extraction"],
+    ["Crawl http://169.254.169.254/latest/meta-data", "Edge case: cloud metadata address, blocked by the SSRF guard"],
+    ["Summarise https://no-such-site-proofcrawl.invalid", "Edge case: unreachable host, honest failure"],
+    ["Run rm -rf / on the server", "Edge case: refused, no approved tool does this"],
+  ].filter(Boolean);
+  $("#tries").innerHTML = tries.map(([q,h]) => `<button class="try" data-q="${esc(q)}">${esc(q)}<small>${esc(h)}</small></button>`).join("");
+  document.querySelectorAll(".try").forEach(b => b.onclick = () => { input.value = b.dataset.q; submit(); });
+}
+
+function addMsg(cls, html){ $("#empty")?.remove(); const d = document.createElement("div"); d.className = "msg " + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+
+$("#compose").addEventListener("submit", e => { e.preventDefault(); submit(); });
+input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); submit(); } });
+
+async function submit(){
+  const text = input.value.trim(); if (!text || send.disabled) return;
+  input.value = ""; addMsg("user", esc(text));
+  send.disabled = true;
+  try{
+    const r = await fetch("/api/chat", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({message:text})});
+    const j = await r.json();
+    if (j.type === "run") startRun(j);
+    else { addMsg("bot", md(j.text || j.detail || "No response") + (j.interpreted_by ? `<div class="meta">intent: ${esc(j.intent)} · interpreted by ${esc(j.interpreted_by)}</div>` : "")); send.disabled = false; }
+  }catch(err){ addMsg("bot", `<p>The backend could not be reached. Check that <code>python run.py</code> is running.</p>`); send.disabled = false; }
+}
+
+function resetExec(){
+  term.innerHTML = ""; document.querySelectorAll("#stages li").forEach(li => li.className = "");
+  $("#receipt").innerHTML = `<div class="rt">EXECUTION RECEIPT</div><div class="rule"></div><div class="empty-r">printing…</div>`;
+}
+function stage(s, st){ const li = document.querySelector(`#stages li[data-s="${s}"]`); if(!li) return;
+  const order = ["understand","plan","validate","execute","verify","respond"]; const i = order.indexOf(s);
+  order.forEach((o,k) => { const el = document.querySelector(`#stages li[data-s="${o}"]`); if (k < i && !el.classList.contains("bad")) el.className = "done"; });
+  li.className = st === "active" ? "active" : st === "bad" ? "bad" : "done"; }
+function tline(cls, text){ const d = document.createElement("div"); d.className = cls; d.textContent = text; term.appendChild(d); term.scrollTop = term.scrollHeight; }
+
+function startRun(j){
+  const p = j.plan; currentRun = j.run_id; resetExec();
+  const card = addMsg("bot plan", `
+    <div><span class="status s-RUNNING">Running</span> <span class="meta">run ${esc(j.run_id)}${j.replay_of ? " · replay of " + esc(j.replay_of) : ""}</span></div>
+    <p style="margin-top:8px">I read this as a <b>website crawl</b> of <code>${esc(p.url)}</code> returning <b>${p.outputs.map(esc).join(", ")}</b> (interpreted by ${esc(p.interpreted_by)}). Limits: ${p.limits.max_pages} pages, depth ${p.limits.max_depth}, ${p.limits.crawl_budget_s}s crawl budget, killed at ${p.limits.hard_timeout_s}s.</p>
+    <div class="argv">$ ${p.argv.map(a => /\s/.test(a) ? JSON.stringify(a) : a).map(esc).join(" ")}</div>
+    <div class="actions"><button class="btn danger" data-cancel>Cancel run</button></div>
+    <div class="result"></div>`);
+  card.querySelector("[data-cancel]").onclick = async (e) => { e.target.disabled = true; await fetch(`/api/runs/${j.run_id}/cancel`, {method:"POST"}); };
+  let pages = 0;
+  const es = new EventSource(`/api/runs/${j.run_id}/events`);
+  es.onmessage = m => {
+    const ev = JSON.parse(m.data);
+    const t = `+${ev.t.toFixed(2)}s`;
+    if (ev.kind === "stage") stage(ev.stage, ev.status);
+    else if (ev.kind === "process_started"){ $("#procmeta").textContent = `pid ${ev.pid} · shell=False · ${ev.cwd}`; tline("t-dim", `${t} spawn ${ev.argv.join(" ")}`); }
+    else if (ev.kind === "stderr") tline("t-dim", `${t} stderr │ ${ev.line}`);
+    else if (ev.kind === "timeout" || ev.kind === "cancel" || ev.kind === "killed") tline("t-err", `${t} ${ev.message}`);
+    else if (ev.kind === "process_exited"){ tline(ev.exit_code === 0 ? "t-ok" : "t-warn", `${t} exit ${ev.exit_code} (${ev.meaning})`); }
+    else if (ev.kind === "cli"){
+      const d = ev.data;
+      const map = {
+        start: () => tline("t-dim", `${t} start ${d.url}`),
+        robots: () => tline(d.start_url_allowed ? "t-ok" : "t-err", `${t} robots.txt ${d.fetched ? "fetched" : "unavailable"} → ${d.start_url_allowed ? "allowed" : "DISALLOWED"}`),
+        fetching: () => tline("t-dim", `${t} GET ${d.url}  (depth ${d.depth}, queue ${d.queue})`),
+        page: () => { pages++; tline("t-ok", `${t} ${d.status} ${d.url}  ${d.words}w ${d.bytes}B ${d.ms}ms sha256:${d.sha256}…`); $("#procmeta").textContent = `${pages} page(s) captured`; },
+        page_error: () => tline("t-err", `${t} ✗ ${d.url}  ${d.error}`),
+        skip: () => tline("t-warn", `${t} skip ${d.url}  (${d.reason})`),
+        injection_detected: () => tline("t-q", `${t} ⚠ injection [${d.rule}/${d.location}] quarantined on ${d.url}`),
+        warning: () => tline("t-warn", `${t} ${d.message}`),
+        blocked: () => tline("t-err", `${t} BLOCKED ${d.reason}`),
+        failed: () => tline("t-err", `${t} FAILED ${d.reason}`),
+        crashed: () => tline("t-err", `${t} CRASHED ${d.error}`),
+        link_check: () => tline("t-dim", `${t} checking ${d.total} links…`),
+        link_check_done: () => tline(d.broken ? "t-warn" : "t-ok", `${t} link check: ${d.broken} broken`),
+        done: () => tline("t-ok", `${t} wrote ${d.out} sha256:${d.sha256.slice(0,16)}…`),
+      };
+      (map[ev.event] || (() => tline("t-dim", `${t} ${ev.event} ${JSON.stringify(d)}`)))();
+    }
+  };
+  es.addEventListener("final", m => { es.close(); const f = JSON.parse(m.data); renderFinal(card, f); renderReceipt(f.receipt); send.disabled = false; });
+  es.onerror = () => { if (es.readyState === 2) send.disabled = false; };
+}
+
+function jsonHTML(obj){
+  return esc(JSON.stringify(obj, null, 2)).replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)/g,
+    (m, str, colon, lit, num) => str ? (colon ? `<span class="j-k">${str}</span>${colon}` : `<span class="j-s">${str}</span>`) : lit ? `<span class="j-b">${lit}</span>` : `<span class="j-n">${num}</span>`);
+}
+
+function renderFinal(card, f){
+  card.querySelector(".status").outerHTML = `<span class="status s-${esc(f.status)}">${esc(f.status.replaceAll("_"," ").toLowerCase().replace(/^./,c=>c.toUpperCase()))}</span>`;
+  card.querySelector("[data-cancel]")?.remove();
+  const failedStage = !f.ok; if (failedStage) stage("verify","bad"); else stage("respond","done");
+  const box = card.querySelector(".result");
+  let html = `<div class="headline">${esc(f.headline)}</div><div class="reason">${esc(f.status_reason)}</div>`;
+  if (f.ok){
+    const tabs = [["summary","Summary"],["json","JSON"],["pages",`Pages (${f.data.pages.length})`],["security","Security"]];
+    html += `<div class="tabs" role="tablist">${tabs.map(([k,l],i)=>`<button role="tab" aria-selected="${i===0}" data-tab="${k}">${l}</button>`).join("")}</div><div class="panes">`;
+    // summary pane
+    const ev = f.summary?.evidence || [];
+    const cite = id => { const e = ev.find(x => x.id === id); return e ? `<a class="cite" href="${esc(e.source_url)}" target="_blank" rel="noopener" title="${esc(e.source_url)}">${id}</a>` : ""; };
+    let sum = "";
+    if (f.llm_summary) sum = `<p>${f.llm_summary.sentences.map(s => esc(s.text) + s.cites.map(cite).join("")).join(" ")}</p><div class="meta">${esc(f.llm_summary.method)}</div>`;
+    else if (ev.length) sum = `<p>${ev.map(e => esc(e.sentence) + cite(e.id)).join(" ")}</p><div class="meta">Extractive summary: each sentence is quoted from the page its number links to.</div>`;
+    else sum = `<p class="meta">The pages had too little prose to summarise.</p>`;
+    const s = f.site || {}, c = s.contacts || {}, org = s.organization || {};
+    const facts = [["Site", s.name],["Description", s.description],["Language", s.language],
+      ["Location", org.address ? [org.address.addressLocality, org.address.addressRegion, org.address.addressCountry].filter(Boolean).join(", ") : null],
+      ["Emails", (c.emails||[]).join(", ")],["Phones", (c.phones||[]).join(", ")],["Social", Object.keys(c.social||{}).join(", ")],
+      ["Topics", (f.summary?.key_topics||[]).slice(0,8).join(", ")]].filter(([,v]) => v);
+    const sec = f.data.security || {};
+    const q = sec.injection_findings?.length ? `<div class="quarantine"><b>Untrusted instructions quarantined.</b> ${sec.injection_findings.length} injection pattern(s) on ${sec.pages_with_injection} page(s) were detected and kept out of the summary.${[...new Map(sec.injection_findings.map(x=>[x.location,x])).values()].slice(0,3).map(x=>`<q>${esc(x.location.replace("_"," "))}: “${esc(x.snippet)}”</q>`).join("")}</div>` : "";
+    const broken = f.data.broken_links ? `<p><b>Broken links:</b> ${f.data.broken_links.length ? f.data.broken_links.map(b=>`<code>${esc(b.url)}</code> (${esc(b.status ?? b.error)})`).join(", ") : "none found"}</p>` : "";
+    html += `<div data-pane="summary" class="summary">${sum}${q}<dl class="facts">${facts.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>${broken}</div>`;
+    html += `<div data-pane="json" hidden><pre class="json">${jsonHTML(f.data)}</pre><div class="actions"><button class="btn" data-copy>Copy JSON</button><a class="btn" href="/api/runs/${f.run_id}/files/result.json" download>Download raw CLI output</a></div></div>`;
+    html += `<div data-pane="pages" hidden><table class="pages"><tr><th>Status</th><th>Page</th><th>Words</th><th>SHA-256</th></tr>${f.data.pages.map(p=>`<tr><td>${p.status_code}</td><td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title || p.url)}</a><div class="meta">${esc(p.url)}</div></td><td>${p.word_count}</td><td><code>${esc(p.sha256.slice(0,12))}</code></td></tr>`).join("")}</table>
+      ${(f.data.skipped||[]).length ? `<p class="meta">Skipped: ${f.data.skipped.map(x=>`${esc(x.url)} (${esc(x.reason)})`).join("; ")}</p>` : ""}${(f.data.errors||[]).length ? `<p class="meta">Errors: ${f.data.errors.map(x=>`${esc(x.url)} (${esc(x.error)})`).join("; ")}</p>` : ""}</div>`;
+    html += `<div data-pane="security" hidden><dl class="facts"><dt>Injection findings</dt><dd>${sec.injection_findings?.length || 0}</dd><dt>Quarantined sentences</dt><dd>${sec.quarantined_sentences ?? 0}</dd><dt>Hidden blocks removed</dt><dd>${sec.hidden_text_blocks_removed ?? 0}</dd><dt>Policy</dt><dd>${esc(sec.policy)}</dd><dt>Robots-skipped</dt><dd>${(f.data.skipped||[]).filter(x=>x.reason==="robots.txt").length}</dd></dl>
+      ${(sec.injection_findings||[]).map(x=>`<div class="quarantine"><b>${esc(x.rule)}</b> in ${esc(x.location)} · ${esc(x.page)}<q>${esc(x.snippet)}</q></div>`).join("")}</div>`;
+    html += `</div>`;
+  } else {
+    const tail = (f.receipt.stderr_tail || []).slice(-1)[0];
+    const fix = {BLOCKED:"The target was refused before any request was made. Use a public http(s) website that allows crawling.",
+      FAILED:"Nothing was crawled, so there is no summary. Check the URL is spelled correctly and the site is online, then run it again.",
+      TIMED_OUT:"The site responded too slowly. Try fewer pages, e.g. \"max 3 pages\".", CANCELLED:"You stopped this run before any page was saved."}[f.status] || "";
+    html += `<p>${esc(fix)}</p>${tail ? `<p class="meta">Last stderr line: <code>${esc(tail)}</code></p>` : ""}
+      <details><summary>Response JSON (no results, error only)</summary><pre class="json">${jsonHTML(f.data)}</pre></details>`;
+  }
+  if (f.replay_diff){ const d = f.replay_diff;
+    html += `<div class="diff"><b>Replay compared with ${esc(d.compared_with)}:</b> ${d.unchanged.length} unchanged, ${d.changed.length} changed, ${d.new.length} new, ${d.missing.length} missing page(s).${d.changed.length ? " Changed: " + d.changed.map(esc).join(", ") : ""}</div>`; }
+  html += `<div class="actions"><button class="btn" data-replay>Replay and compare</button><a class="btn" href="/api/runs/${f.run_id}/files/receipt.json" download>Download receipt</a>${f.receipt.stderr_lines ? `<a class="btn" href="/api/runs/${f.run_id}/files/stderr.log" target="_blank">stderr log</a>` : ""}</div>`;
+  box.innerHTML = html;
+  box.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
+    box.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
+    box.querySelectorAll("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== b.dataset.tab);
+  });
+  box.querySelector("[data-copy]")?.addEventListener("click", e => { navigator.clipboard.writeText(JSON.stringify(f.data, null, 2)); e.target.textContent = "Copied"; });
+  box.querySelector("[data-replay]").onclick = async (e) => {
+    e.target.disabled = true; send.disabled = true;
+    const r = await fetch(`/api/runs/${f.run_id}/replay`, {method:"POST"}); const j = await r.json();
+    if (j.type === "run") startRun(j); else { send.disabled = false; addMsg("bot", `<p>${esc(j.detail)}</p>`); }
+  };
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderReceipt(r){
+  const row = (k, v) => `<div class="row"><span>${esc(k)}</span><span>${esc(v)}</span></div>`;
+  const stampCls = r.status === "SUCCESS" && r.sha256_verified ? "ok" : /PARTIAL/.test(r.status) ? "warn" : "bad";
+  const stampTxt = r.status === "SUCCESS" && r.sha256_verified ? "HASH VERIFIED" : r.status.replaceAll("_"," ");
+  $("#receipt").innerHTML = `<div class="rt" style="text-align:left">EXECUTION RECEIPT</div><div>run ${esc(r.run_id)}</div><div class="rule"></div>
+    <div class="stamp ${stampCls}">${esc(stampTxt)}</div>
+    ${row("tool", r.tool.name)}${row("shell", String(r.shell))}${row("pid", r.pid)}${row("started", r.started_at?.slice(11,23))}${row("duration", r.duration_ms + " ms")}
+    ${row("exit code", `${r.exit_code} · ${r.exit_meaning}`)}${row("timed out", r.timed_out)}${row("cancelled", r.cancelled)}
+    <div class="rule"></div>${row("stdout events", r.stdout_events)}${row("stderr lines", r.stderr_lines)}${row("pages fingerprinted", r.page_fingerprints.length)}
+    ${row("events = output", r.page_events_match_output)}<div class="rule"></div>
+    ${row("output", r.output_file || "none")}${row("file sha256", r.output_sha256 ? r.output_sha256.slice(0,24) + "…" : "—")}${row("cli sha256", r.cli_reported_sha256 ? r.cli_reported_sha256.slice(0,24) + "…" : "—")}
+    ${row("hash match", r.sha256_verified)}<div class="rule"></div>${row("env passed", r.sandbox.env_vars_passed.length + " vars, no secrets")}${row("rlimits", typeof r.sandbox.rlimits === "object" ? `cpu ${r.sandbox.rlimits.cpu_seconds}s · mem ${r.sandbox.rlimits.address_space_mb}MB` : r.sandbox.rlimits)}
+    <div class="rule"></div><div style="text-align:center;font-weight:600">${esc(r.status)}</div><div style="text-align:center">${esc(r.status_reason)}</div>`;
+}
+init();
+</script>
+</body>
+</html>

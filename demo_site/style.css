@@ -1,0 +1,30 @@
+:root{--forest:#0f3d2e;--leaf:#1f7a4d;--sun:#f6b93b;--sky:#e8f4ee;--ink:#14261d}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);line-height:1.65;
+  background:radial-gradient(circle at 85% -10%,#ffe7a8 0,transparent 40%),linear-gradient(180deg,var(--sky),#fff 60%)}
+nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:14px max(24px,calc(50% - 480px));
+  background:var(--forest);box-shadow:0 2px 12px rgba(15,61,46,.35)}
+nav::before{content:"☀ Verdant Grid";color:var(--sun);font-weight:800;font-size:18px;margin-right:auto;letter-spacing:-.01em}
+nav a{color:#e6f4ec;text-decoration:none;font-weight:600;font-size:15px;padding:7px 14px;border-radius:999px;transition:background .15s}
+nav a:hover{background:rgba(255,255,255,.14)}
+nav a[href="/contact/"]{background:var(--sun);color:var(--forest)}
+main{max-width:960px;margin:0 auto;padding:0 24px 32px}
+main>h1:first-child{margin:28px -24px 28px;padding:72px 40px 64px;border-radius:22px;color:#fff;font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-.03em;
+  background:linear-gradient(120deg,rgba(15,61,46,.95),rgba(31,122,77,.85)),repeating-linear-gradient(45deg,#2c8a5c 0 2px,transparent 2px 22px);
+  box-shadow:0 18px 40px -18px rgba(15,61,46,.6);position:relative;overflow:hidden}
+main>h1:first-child::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,var(--sun) 0 38%,rgba(246,185,59,.25) 39% 60%,transparent 61%)}
+h2{font-size:26px;letter-spacing:-.02em;color:var(--forest);margin:40px 0 14px;display:flex;align-items:center;gap:12px}
+h2::before{content:"";width:10px;height:28px;border-radius:4px;background:var(--sun)}
+p{font-size:17px;max-width:72ch}
+main>p:first-of-type{font-size:20px;color:#21402f}
+ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+li{background:#fff;border:1px solid #d3e8dc;border-top:5px solid var(--leaf);border-radius:14px;padding:18px 18px 18px 52px;position:relative;
+  box-shadow:0 8px 20px -14px rgba(15,61,46,.45)}
+li::before{content:"⚡";position:absolute;left:16px;top:16px;font-size:20px}
+a{color:var(--leaf);font-weight:600}
+h2+p{background:#fff;border-left:5px solid var(--leaf);border-radius:0 12px 12px 0;padding:14px 18px;box-shadow:0 8px 20px -16px rgba(15,61,46,.5)}
+footer{background:var(--forest);color:#cfe6d9;padding:28px max(24px,calc(50% - 480px));margin-top:48px;font-size:14px}
+footer a{color:var(--sun)}
+footer p{margin:4px 0;max-width:none;font-size:14px}
+main>h2+p{font-size:17px;color:var(--ink)}
